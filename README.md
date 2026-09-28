@@ -32,6 +32,12 @@ The supplied screen recording demonstrates the mobile-first experience across th
 
 ## 🎥 App Demo
 
+
+
+
+https://github.com/user-attachments/assets/ad840920-1270-40fb-8cf8-b503a88d0d33
+
+
 ### Watch the recorded walkthrough
 
 <video src="./assets/dsa-streak-tracker-demo.mp4" controls width="360">
