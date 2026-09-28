@@ -32,28 +32,24 @@ The supplied screen recording demonstrates the mobile-first experience across th
 
 ## 🎥 App Demo
 
+### Watch the recorded walkthrough
+
 
 
 
 https://github.com/user-attachments/assets/ad840920-1270-40fb-8cf8-b503a88d0d33
 
 
-### Watch the recorded walkthrough
 
 <video src="./assets/dsa-streak-tracker-demo.mp4" controls width="360">
   Your browser does not support embedded video.
   <a href="./assets/dsa-streak-tracker-demo.mp4">Watch the DSA Streak Tracker demo</a>.
 </video>
 
-**[▶️ Open the full screen recording](./assets/dsa-streak-tracker-demo.mp4)**
 
-> The recording is the original app walkthrough supplied for this README. The video is included in `assets/` so the repository contains the demo alongside the documentation.
+##  Core Features
 
----
-
-## 🧭 Core Features
-
-### 🔥 Streak Tracking
+###  Streak Tracking
 - Current streak and longest streak
 - Today: **Done / Pending**
 - Warning when today's practice is still pending
