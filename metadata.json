@@ -1,0 +1,7 @@
+{
+  "name": "DSA Streak Tracker",
+  "description": "Track daily Data Structures & Algorithms practice, streaks, and roadmap progress with a 25-topic curriculum, charts, and habits.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
