@@ -358,8 +358,6 @@ The committed `.env.example` should contain placeholders only.
 
 ## 🎯 Project Goal
 
-> **Don't chase a perfect streak. Build a consistent DSA habit.**
-
 Every problem solved is a small step toward stronger problem-solving skills.
 
 **Track it. Solve it. Learn from it. Repeat.**
