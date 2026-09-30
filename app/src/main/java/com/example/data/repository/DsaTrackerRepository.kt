@@ -35,10 +35,58 @@ class DsaTrackerRepository(private val database: AppDatabase) {
             database.userSettingsDao().insertOrUpdateSettings(UserSettingsEntity())
         }
 
-        val allProblemsList = database.problemDao().getAllProblems().firstOrNull() ?: emptyList()
-        val hasSolvedProblems = allProblemsList.any { it.solved && !it.solvedDate.isNullOrBlank() }
-        if (!hasSolvedProblems && allProblemsList.isNotEmpty()) {
-            seedSampleRevisions()
+        // Clean up any legacy hardcoded sample solved problems
+        val allProblems = database.problemDao().getAllProblems().firstOrNull() ?: emptyList()
+        val sampleSolved = allProblems.filter {
+            it.solved && (
+                it.revisionNotes.contains("Hash set for O(1)") ||
+                it.revisionNotes.contains("Opposite pointers converging") ||
+                it.revisionNotes.contains("Inward dual pointers") ||
+                it.revisionNotes.contains("One-pass hash map") ||
+                (it.title in listOf("Contains Duplicate", "Two Sum II - Input Array Is Sorted", "Valid Palindrome", "Two Sum") &&
+                 it.solvedDate != null && it.solvedDate != LocalDate.now().toString())
+            )
+        }
+        if (sampleSolved.isNotEmpty()) {
+            sampleSolved.forEach { problem ->
+                database.problemDao().updateProblem(
+                    problem.copy(
+                        solved = false,
+                        solvedDate = null,
+                        lastRevisedDate = null,
+                        revisionNotes = ""
+                    )
+                )
+            }
+        }
+
+        // Clean up any legacy demo logs so new users have zero activity on the heatmap
+        val allLogs = database.dailyLogDao().getAllLogs().firstOrNull() ?: emptyList()
+        val demoLogs = allLogs.filter { log ->
+            log.notes.contains("Mastered Sliding Window") ||
+            log.notes.contains("Container With Most Water") ||
+            log.notes.contains("3Sum using sorted array") ||
+            log.notes.contains("HashMap frequency counting") ||
+            log.notes.contains("Subarray Sum Equals K") ||
+            log.notes.contains("Valid Palindrome with alphanumeric regex clean") ||
+            log.notes.contains("Longest Common Prefix horizontal") ||
+            log.notes.contains("Kadane's algorithm for max subarray") ||
+            log.notes.contains("Two Sum optimal O(n) map approach") ||
+            log.notes.contains("Rotate array in-place reversing 3 sections") ||
+            log.notes.contains("Big-O space complexity of recursive call stack") ||
+            log.notes.contains("Time complexity comparison of binary search")
+        }
+        if (demoLogs.isNotEmpty()) {
+            demoLogs.forEach { log ->
+                database.dailyLogDao().deleteLog(log.date)
+            }
+            if (demoLogs.size == allLogs.size) {
+                // If only demo logs were present, reset streak and milestones
+                val currentSettings = database.userSettingsDao().getSettingsSync() ?: UserSettingsEntity()
+                database.userSettingsDao().insertOrUpdateSettings(
+                    currentSettings.copy(longestStreak = 0, lastCelebratedMilestone = 0)
+                )
+            }
         }
     }
 

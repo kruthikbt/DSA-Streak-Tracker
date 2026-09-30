@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -53,6 +54,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.RevisionFilter
@@ -127,7 +130,10 @@ fun RevisionScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Surface(
                                 shape = CircleShape,
                                 color = FlamePrimary.copy(alpha = 0.15f),
@@ -143,32 +149,41 @@ fun RevisionScreen(
                                 }
                             }
                             Spacer(modifier = Modifier.width(12.dp))
-                            Column {
+                            Column(modifier = Modifier.weight(1f, fill = false)) {
                                 Text(
                                     text = "Spaced Revision",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1
                                 )
                                 Text(
                                     text = "3 • 7 • 30 Day Recall Cycle",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
+
+                        Spacer(modifier = Modifier.width(8.dp))
 
                         // Total due badge
                         Surface(
                             shape = RoundedCornerShape(50),
                             color = if (countTotalDue > 0) FlamePrimary.copy(alpha = 0.2f) else SolvedGreen.copy(alpha = 0.2f),
-                            border = BorderStroke(1.dp, if (countTotalDue > 0) FlamePrimary else SolvedGreen)
+                            border = BorderStroke(1.dp, if (countTotalDue > 0) FlamePrimary else SolvedGreen),
+                            modifier = Modifier.wrapContentWidth()
                         ) {
                             Text(
-                                text = if (countTotalDue > 0) "$countTotalDue Due" else "All Done ✓",
+                                text = "$countTotalDue Due",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = if (countTotalDue > 0) FlamePrimary else SolvedGreen,
+                                maxLines = 1,
+                                softWrap = false,
+                                textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                             )
                         }
@@ -188,7 +203,7 @@ fun RevisionScreen(
                     // 3 Interactive Metric Cards (3 Days, 7 Days, 30 Days)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         // 3 Days Ago
                         MetricIntervalCard(
@@ -382,7 +397,7 @@ fun RevisionScreen(
                                 onClick = onNavigateToRoadmap,
                                 shape = RoundedCornerShape(10.dp)
                             ) {
-                                Text("Go to Roadmap", fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
+                                Text("Go to Roadmap", fontWeight = FontWeight.SemiBold, fontSize = 12.sp, maxLines = 1, softWrap = false)
                             }
                         }
                     }
@@ -481,14 +496,18 @@ private fun MetricIntervalCard(
         modifier = modifier.clickable { onClick() }
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp, vertical = 10.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = "$count",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold,
-                color = accentColor
+                color = accentColor,
+                maxLines = 1,
+                softWrap = false
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
@@ -496,14 +515,18 @@ private fun MetricIntervalCard(
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                softWrap = false
             )
             Text(
                 text = sublabel,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 10.sp,
-                maxLines = 1
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                softWrap = false
             )
         }
     }

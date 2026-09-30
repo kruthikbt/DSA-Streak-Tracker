@@ -222,7 +222,9 @@ class MainActivity : ComponentActivity() {
                                             Text(
                                                 text = item.label,
                                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                                fontSize = 11.sp
+                                                fontSize = 10.5.sp,
+                                                maxLines = 1,
+                                                softWrap = false
                                             )
                                         },
                                         colors = NavigationBarItemDefaults.colors(

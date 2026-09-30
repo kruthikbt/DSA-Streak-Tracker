@@ -110,8 +110,8 @@ class DsaTrackerViewModel(application: Application) : AndroidViewModel(applicati
             val is7Exact = daysAgo == 7L
             val is30Exact = daysAgo == 30L
 
-            val isDue = is3Exact || is7Exact || is30Exact || daysAgo in 3L..6L || daysAgo in 7L..29L || daysAgo >= 30L
             val isRevisedToday = problem.lastRevisedDate == today.toString()
+            val isDue = (is3Exact || is7Exact || is30Exact || daysAgo in 3L..6L || daysAgo in 7L..29L || daysAgo >= 30L) && !isRevisedToday
 
             RevisionProblemItem(
                 problem = problem,

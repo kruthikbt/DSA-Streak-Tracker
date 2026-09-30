@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
         StreakFreezeEntity::class,
         UserSettingsEntity::class
     ],
-    version = 2,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -45,6 +45,42 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Reset legacy hardcoded sample solved problems to completely unsolved state
+                db.execSQL("""
+                    UPDATE problems 
+                    SET solved = 0, solvedDate = NULL, lastRevisedDate = NULL, revisionNotes = ''
+                    WHERE title IN ('Contains Duplicate', 'Two Sum II - Input Array Is Sorted', 'Valid Palindrome', 'Two Sum')
+                      AND (revisionNotes LIKE '%Hash set for O(1)%' 
+                        OR revisionNotes LIKE '%Opposite pointers%' 
+                        OR revisionNotes LIKE '%Inward dual pointers%' 
+                        OR revisionNotes LIKE '%One-pass hash map%')
+                """.trimIndent())
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // Delete legacy demo logs to guarantee a completely fresh zero-activity heatmap for new users
+                db.execSQL("""
+                    DELETE FROM daily_logs 
+                    WHERE notes LIKE '%Mastered Sliding Window%'
+                       OR notes LIKE '%Container With Most Water%'
+                       OR notes LIKE '%3Sum using sorted array%'
+                       OR notes LIKE '%HashMap frequency counting%'
+                       OR notes LIKE '%Subarray Sum Equals K%'
+                       OR notes LIKE '%Valid Palindrome with alphanumeric regex clean%'
+                       OR notes LIKE '%Longest Common Prefix horizontal%'
+                       OR notes LIKE '%Kadane''s algorithm for max subarray%'
+                       OR notes LIKE '%Two Sum optimal O(n) map approach%'
+                       OR notes LIKE '%Rotate array in-place reversing 3 sections%'
+                       OR notes LIKE '%Big-O space complexity of recursive call stack%'
+                       OR notes LIKE '%Time complexity comparison of binary search%'
+                """.trimIndent())
+            }
+        }
+
         fun getDatabase(context: Context, scope: CoroutineScope): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -52,7 +88,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "dsa_streak_tracker.db"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .fallbackToDestructiveMigration()
                     .addCallback(DatabaseCallback(scope))
                     .build()

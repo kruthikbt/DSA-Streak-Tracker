@@ -42,8 +42,9 @@ fun WeeklyBarChart(
     modifier: Modifier = Modifier
 ) {
     val today = remember { LocalDate.now() }
-    val logsByDate = remember(dailyLogs) {
-        dailyLogs.associateBy { it.date }
+    val problemsCountByDate = remember(dailyLogs) {
+        dailyLogs.groupBy { it.date }
+            .mapValues { (_, logs) -> logs.sumOf { it.problemsSolved } }
     }
 
     // Past 7 days (today-6 to today)
@@ -53,9 +54,9 @@ fun WeeklyBarChart(
         }
     }
 
-    val dailyCounts = remember(past7Days, logsByDate) {
+    val dailyCounts = remember(past7Days, problemsCountByDate) {
         past7Days.map { date ->
-            logsByDate[date.toString()]?.problemsSolved ?: 0
+            problemsCountByDate[date.toString()] ?: 0
         }
     }
 

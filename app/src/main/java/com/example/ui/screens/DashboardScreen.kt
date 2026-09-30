@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,6 +47,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.DailyLogEntity
@@ -193,18 +197,26 @@ fun DashboardScreen(
                                 onClick = { onDailyPlanClick?.invoke(topic) },
                                 colors = ButtonDefaults.buttonColors(containerColor = AlgorithmViolet),
                                 shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
                                 modifier = Modifier
-                                    .weight(1.3f)
+                                    .weight(1f)
+                                    .height(42.dp)
                                     .testTag("dashboard_daily_plan_btn")
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.AutoAwesome,
                                     contentDescription = null,
                                     tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(15.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("Daily Plan ✨", color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1)
+                                Text(
+                                    text = "Daily",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
                             }
 
                             OutlinedButton(
@@ -212,23 +224,38 @@ fun DashboardScreen(
                                 border = BorderStroke(1.dp, FlamePrimary),
                                 colors = ButtonDefaults.outlinedButtonColors(contentColor = FlamePrimary),
                                 shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
                                 modifier = Modifier
-                                    .weight(1.0f)
+                                    .weight(1f)
+                                    .height(42.dp)
                                     .testTag("dashboard_log_practice_btn")
                             ) {
-                                Text("Log", fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    text = "Log",
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
                             }
 
                             Button(
                                 onClick = { onNavigateToTopic(topic.id) },
                                 colors = ButtonDefaults.buttonColors(containerColor = TechCyan),
                                 shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
                                 modifier = Modifier
-                                    .weight(1.1f)
+                                    .weight(1f)
+                                    .height(42.dp)
                                     .testTag("dashboard_go_to_topic_btn")
                             ) {
-                                Text("Roadmap", color = Color.White, fontWeight = FontWeight.Bold)
-                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(
+                                    text = "Roadmap",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                                     contentDescription = null,
@@ -261,7 +288,10 @@ fun DashboardScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Surface(
                                 shape = CircleShape,
                                 color = FlamePrimary.copy(alpha = 0.15f),
@@ -277,31 +307,40 @@ fun DashboardScreen(
                                 }
                             }
                             Spacer(modifier = Modifier.width(10.dp))
-                            Column {
+                            Column(modifier = Modifier.weight(1f, fill = false)) {
                                 Text(
                                     text = "Spaced Revision",
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1
                                 )
                                 Text(
                                     text = "Revisit problems solved 3, 7, and 30 days ago",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                             }
                         }
 
+                        Spacer(modifier = Modifier.width(8.dp))
+
                         Surface(
                             shape = RoundedCornerShape(50),
-                            color = if (totalDue > 0) FlamePrimary.copy(alpha = 0.15f) else SolvedGreen.copy(alpha = 0.15f)
+                            color = if (totalDue > 0) FlamePrimary.copy(alpha = 0.15f) else SolvedGreen.copy(alpha = 0.15f),
+                            modifier = Modifier.wrapContentWidth()
                         ) {
                             Text(
-                                text = if (totalDue > 0) "$totalDue Due" else "Up to date ✓",
+                                text = "$totalDue Due",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 color = if (totalDue > 0) FlamePrimary else SolvedGreen,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                maxLines = 1,
+                                softWrap = false,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                             )
                         }
                     }
@@ -311,7 +350,8 @@ fun DashboardScreen(
                     // 3 Interval Badges row (3d, 7d, 30d)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         RevisionDashboardBadge(
                             label = "3d Recall",
@@ -468,7 +508,9 @@ fun DashboardScreen(
                             text = "Roadmap Completion",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            softWrap = false
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -536,21 +578,31 @@ private fun RevisionDashboardBadge(
         modifier = modifier
     ) {
         Column(
-            modifier = Modifier.padding(vertical = 8.dp, horizontal = 6.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 10.dp, horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = "$count",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.ExtraBold,
-                color = color
+                color = color,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                softWrap = false
             )
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 10.sp,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                softWrap = false
             )
         }
     }

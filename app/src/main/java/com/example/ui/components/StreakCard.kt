@@ -11,6 +11,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -107,7 +108,7 @@ fun StreakCard(
                     )
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -116,12 +117,14 @@ fun StreakCard(
                             tint = if (streakInfo.isTodayCompleted) SolvedGreen else MediumYellow,
                             modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(5.dp))
                         Text(
                             text = if (streakInfo.isTodayCompleted) "Today: Done ✅" else "Today: Pending ⏳",
                             style = MaterialTheme.typography.labelMedium,
                             fontWeight = FontWeight.SemiBold,
-                            color = if (streakInfo.isTodayCompleted) SolvedGreen else MediumYellow
+                            color = if (streakInfo.isTodayCompleted) SolvedGreen else MediumYellow,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 }
@@ -133,7 +136,7 @@ fun StreakCard(
                     border = BorderStroke(1.dp, TechCyan.copy(alpha = 0.4f))
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -147,7 +150,9 @@ fun StreakCard(
                             text = "Freezes: ${streakInfo.freezesRemainingThisMonth}/2",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Medium,
-                            color = TechCyan
+                            color = TechCyan,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 }
@@ -254,6 +259,7 @@ fun StreakCard(
                                     border = BorderStroke(1.dp, TechCyan),
                                     colors = ButtonDefaults.outlinedButtonColors(contentColor = TechCyan),
                                     shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                                     modifier = Modifier.testTag("use_freeze_button")
                                 ) {
                                     Icon(
@@ -262,7 +268,7 @@ fun StreakCard(
                                         modifier = Modifier.size(14.dp)
                                     )
                                     Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Freeze", style = MaterialTheme.typography.labelSmall)
+                                    Text("Freeze", style = MaterialTheme.typography.labelSmall, maxLines = 1, softWrap = false)
                                 }
                                 Spacer(modifier = Modifier.width(6.dp))
                             }
@@ -271,9 +277,10 @@ fun StreakCard(
                                 onClick = onLogClick,
                                 colors = ButtonDefaults.buttonColors(containerColor = FlamePrimary),
                                 shape = RoundedCornerShape(8.dp),
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                                 modifier = Modifier.testTag("quick_log_today_button")
                             ) {
-                                Text("Log Now", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                                Text("Log Now", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false)
                             }
                         }
                     }

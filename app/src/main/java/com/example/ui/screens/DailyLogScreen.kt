@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -220,25 +221,27 @@ fun DailyLogScreen(
                         OutlinedButton(
                             onClick = { selectedDateStr = today.toString() },
                             shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
                             colors = if (selectedDateStr == today.toString()) {
                                 ButtonDefaults.outlinedButtonColors(containerColor = FlamePrimary.copy(alpha = 0.15f))
                             } else {
                                 ButtonDefaults.outlinedButtonColors()
                             }
                         ) {
-                            Text("Today", fontSize = 12.sp)
+                            Text("Today", fontSize = 11.sp, maxLines = 1, softWrap = false)
                         }
 
                         OutlinedButton(
                             onClick = { selectedDateStr = today.minusDays(1).toString() },
                             shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
                             colors = if (selectedDateStr == today.minusDays(1).toString()) {
                                 ButtonDefaults.outlinedButtonColors(containerColor = FlamePrimary.copy(alpha = 0.15f))
                             } else {
                                 ButtonDefaults.outlinedButtonColors()
                             }
                         ) {
-                            Text("Yesterday", fontSize = 12.sp)
+                            Text("Yesterday", fontSize = 11.sp, maxLines = 1, softWrap = false)
                         }
                     }
 

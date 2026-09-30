@@ -16,20 +16,12 @@ import java.time.temporal.ChronoUnit
 class SpacedRevisionTest {
 
     @Test
-    fun testDefaultSeedData_Contains3d7d30dProblems() {
+    fun testDefaultSeedData_StartsFreshWithZeroSolvedProblems() {
         val initialProblems = DefaultRoadmapData.createInitialProblems()
         val solvedProblems = initialProblems.filter { it.solved && !it.solvedDate.isNullOrBlank() }
 
-        assertTrue("Should have seeded solved problems", solvedProblems.isNotEmpty())
-
-        val today = LocalDate.now()
-        val daysAgoList = solvedProblems.map {
-            ChronoUnit.DAYS.between(LocalDate.parse(it.solvedDate), today)
-        }
-
-        assertTrue("Should contain a problem solved 3 days ago", daysAgoList.contains(3L))
-        assertTrue("Should contain a problem solved 7 days ago", daysAgoList.contains(7L))
-        assertTrue("Should contain a problem solved 30 days ago", daysAgoList.contains(30L))
+        assertTrue("New user must start with zero solved problems", solvedProblems.isEmpty())
+        assertTrue("Roadmap topics should contain problem templates", initialProblems.isNotEmpty())
     }
 
     @Test

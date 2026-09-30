@@ -55,12 +55,16 @@ fun ContributionHeatmap(
     }
 
     val today = remember { LocalDate.now() }
-    val logsByDate = remember(dailyLogs) {
-        dailyLogs.associateBy { it.date }
+    val problemsCountByDate = remember(dailyLogs) {
+        dailyLogs.groupBy { it.date }
+            .mapValues { (_, dayLogs) -> dayLogs.sumOf { it.problemsSolved } }
+    }
+    val minutesCountByDate = remember(dailyLogs) {
+        dailyLogs.groupBy { it.date }
+            .mapValues { (_, dayLogs) -> dayLogs.sumOf { it.minutes } }
     }
 
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
-    val selectedLog = selectedDate?.let { logsByDate[it.toString()] }
 
     // Generate 52 weeks of dates ending today (arranged Monday to Sunday)
     val weeks = remember(today) {
@@ -199,8 +203,7 @@ fun ContributionHeatmap(
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 week.forEach { date ->
                                     val isFuture = date.isAfter(today)
-                                    val log = logsByDate[date.toString()]
-                                    val problems = log?.problemsSolved ?: 0
+                                    val problems = problemsCountByDate[date.toString()] ?: 0
                                     val isSelected = selectedDate == date
 
                                     val cellColor = when {
@@ -251,8 +254,8 @@ fun ContributionHeatmap(
             ) {
                 // Interactive selected info
                 if (selectedDate != null) {
-                    val count = selectedLog?.problemsSolved ?: 0
-                    val mins = selectedLog?.minutes ?: 0
+                    val count = problemsCountByDate[selectedDate.toString()] ?: 0
+                    val mins = minutesCountByDate[selectedDate.toString()] ?: 0
                     val formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy")
                     Text(
                         text = "${selectedDate!!.format(formatter)}: $count solved ($mins m)",

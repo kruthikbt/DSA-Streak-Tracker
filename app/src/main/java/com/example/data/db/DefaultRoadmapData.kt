@@ -445,37 +445,8 @@ object DefaultRoadmapData {
 
     fun createInitialProblems(): List<ProblemEntity> {
         val problems = mutableListOf<ProblemEntity>()
-        val today = java.time.LocalDate.now()
-        val date3DaysAgo = today.minusDays(3).toString()
-        val date7DaysAgo = today.minusDays(7).toString()
-        val date30DaysAgo = today.minusDays(30).toString()
-
         TOPIC_DEFINITIONS.forEach { def ->
             def.initialProblems.forEach { seed ->
-                val isSolvedSeed = when (seed.title) {
-                    "Contains Duplicate" -> true
-                    "Two Sum II - Input Array Is Sorted" -> true
-                    "Valid Palindrome" -> true
-                    "Two Sum" -> true
-                    else -> seed.solved
-                }
-
-                val solvedDateSeed = when (seed.title) {
-                    "Contains Duplicate" -> date3DaysAgo
-                    "Two Sum II - Input Array Is Sorted" -> date3DaysAgo
-                    "Valid Palindrome" -> date7DaysAgo
-                    "Two Sum" -> date30DaysAgo
-                    else -> if (seed.solved) date7DaysAgo else null
-                }
-
-                val notesSeed = when (seed.title) {
-                    "Contains Duplicate" -> "Hash set for O(1) membership lookup. Invariant: seen elements are unique."
-                    "Two Sum II - Input Array Is Sorted" -> "Opposite pointers converging. Sorted monotonic property."
-                    "Valid Palindrome" -> "Inward dual pointers skipping non-alphanumerics. Symmetrical equality check."
-                    "Two Sum" -> "One-pass hash map caching target - num complement. O(n) time and O(n) space."
-                    else -> ""
-                }
-
                 problems.add(
                     ProblemEntity(
                         id = UUID.randomUUID().toString(),
@@ -484,9 +455,10 @@ object DefaultRoadmapData {
                         difficulty = seed.difficulty,
                         platform = seed.platform,
                         link = seed.link,
-                        solved = isSolvedSeed,
-                        solvedDate = solvedDateSeed,
-                        revisionNotes = notesSeed
+                        solved = false,
+                        solvedDate = null,
+                        lastRevisedDate = null,
+                        revisionNotes = ""
                     )
                 )
             }
