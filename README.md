@@ -20,7 +20,7 @@ Track your daily practice, protect your streak, follow a fixed DSA roadmap, and 
 
 ---
 
-## ✨ Overview
+##  <p>   ✨ Overview</p>
 
 **DSA Streak Tracker** turns DSA practice into a simple daily habit.
 
