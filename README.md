@@ -1,4 +1,4 @@
-<div align="center">
+<div  align="center">
 
 <img src="./assets/dsa-streak-tracker-banner.gif" alt="DSA Streak Tracker animated banner" width="100%"/>
 
