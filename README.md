@@ -1,7 +1,7 @@
 <div  align="center">
 
 <img src="./assets/dsa-streak-tracker-banner.gif" alt="DSA Streak Tracker animated banner" width="100%"/>
-
+<hr>
 # DSA Streak Tracker
 
 **A focused, local-first companion for building a consistent Data Structures & Algorithms practice habit.**
