@@ -138,6 +138,7 @@ The app turns your practice history into useful visual feedback:
 The supplied recording shows the analytics screen with total solved, total practice time, daily average, best record, difficulty breakdown, and topic-level progress.
 
 ---
+<hr>
 
 ## ⚙️ Settings & Data
 
