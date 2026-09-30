@@ -18,7 +18,8 @@ Track your daily practice, protect your streak, follow a fixed DSA roadmap, and 
 
 </div>
 
----
+<hr>
+
 
 ##  <p>   ✨ Overview</p>
 
