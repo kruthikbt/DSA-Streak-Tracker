@@ -62,6 +62,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.DailyLogEntity
+import com.example.data.model.ProblemEntity
 import com.example.data.model.TopicEntity
 import com.example.data.model.UserSettingsEntity
 import com.example.ui.theme.FlamePrimary
@@ -75,6 +76,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun DailyLogScreen(
     topics: List<TopicEntity>,
+    problems: List<ProblemEntity> = emptyList(),
     dailyLogs: List<DailyLogEntity>,
     settings: UserSettingsEntity,
     editingLog: DailyLogEntity?,
@@ -90,18 +92,18 @@ fun DailyLogScreen(
 
     var selectedDateStr by remember { mutableStateOf(today.toString()) }
     var selectedTopicId by remember { mutableIntStateOf(1) }
-    var problemsCount by remember { mutableIntStateOf(2) }
-    var minutesCount by remember { mutableIntStateOf(45) }
-    var easyCount by remember { mutableIntStateOf(1) }
-    var mediumCount by remember { mutableIntStateOf(1) }
+    var problemsCount by remember { mutableIntStateOf(0) }
+    var minutesCount by remember { mutableIntStateOf(0) }
+    var easyCount by remember { mutableIntStateOf(0) }
+    var mediumCount by remember { mutableIntStateOf(0) }
     var hardCount by remember { mutableIntStateOf(0) }
     var notesText by remember { mutableStateOf("") }
     var isTopicDropdownExpanded by remember { mutableStateOf(false) }
 
     var logToDelete by remember { mutableStateOf<DailyLogEntity?>(null) }
 
-    // Synchronize form when editingLog changes
-    LaunchedEffect(editingLog) {
+    // Synchronize form when editingLog, selectedDateStr, or actual solved problems change
+    LaunchedEffect(editingLog, selectedDateStr, problems) {
         if (editingLog != null) {
             selectedDateStr = editingLog.date
             selectedTopicId = editingLog.topicId
@@ -111,6 +113,19 @@ fun DailyLogScreen(
             mediumCount = editingLog.mediumCount
             hardCount = editingLog.hardCount
             notesText = editingLog.notes
+        } else {
+            val solvedOnDate = problems.filter { it.solved && it.solvedDate == selectedDateStr }
+            val count = solvedOnDate.size
+            problemsCount = count
+            easyCount = solvedOnDate.count { it.difficulty.equals("Easy", ignoreCase = true) }
+            mediumCount = solvedOnDate.count { it.difficulty.equals("Medium", ignoreCase = true) }
+            hardCount = solvedOnDate.count { it.difficulty.equals("Hard", ignoreCase = true) }
+            minutesCount = if (count > 0) maxOf(settings.minMinutes, count * 25) else 0
+
+            val dominantTopicId = solvedOnDate.firstOrNull()?.topicId
+            if (dominantTopicId != null) {
+                selectedTopicId = dominantTopicId
+            }
         }
     }
 
@@ -242,6 +257,25 @@ fun DailyLogScreen(
                             }
                         ) {
                             Text("Yesterday", fontSize = 11.sp, maxLines = 1, softWrap = false)
+                        }
+                    }
+
+                    val solvedProblemsOnSelectedDate = remember(selectedDateStr, problems) {
+                        problems.filter { it.solved && it.solvedDate == selectedDateStr }
+                    }
+                    if (solvedProblemsOnSelectedDate.isNotEmpty() && editingLog == null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = SolvedGreen.copy(alpha = 0.12f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "🎯 Detected ${solvedProblemsOnSelectedDate.size} solved problem(s) in Roadmap for $selectedDateStr. Counts prefilled automatically.",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = SolvedGreen,
+                                modifier = Modifier.padding(8.dp)
+                            )
                         }
                     }
 

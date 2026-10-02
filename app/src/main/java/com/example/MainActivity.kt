@@ -1,10 +1,14 @@
 package com.example
 
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -47,17 +51,22 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.reminder.DailyReminderHelper
+import com.example.reminder.DailyReminderScheduler
 import com.example.ui.components.ConfettiOverlay
 import com.example.ui.components.DailyPlanDialog
 import com.example.ui.components.MilestoneDialog
@@ -98,6 +107,29 @@ class MainActivity : ComponentActivity() {
             val planDifficulty by viewModel.planDifficulty.collectAsStateWithLifecycle()
             val revisionItems by viewModel.revisionItems.collectAsStateWithLifecycle()
             val selectedRevisionFilter by viewModel.selectedRevisionFilter.collectAsStateWithLifecycle()
+
+            val context = LocalContext.current
+
+            // Notification permission launcher for Android 13+ (API 33+)
+            val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestPermission()
+            ) { isGranted ->
+                if (isGranted) {
+                    DailyReminderScheduler.scheduleDailyReminder(context, settings.reminderTime)
+                }
+            }
+
+            LaunchedEffect(Unit) {
+                DailyReminderHelper.createNotificationChannel(context)
+            }
+
+            LaunchedEffect(settings.reminderEnabled, settings.reminderTime) {
+                if (settings.reminderEnabled) {
+                    DailyReminderScheduler.scheduleDailyReminder(context, settings.reminderTime)
+                } else {
+                    DailyReminderScheduler.cancelDailyReminder(context)
+                }
+            }
 
             DsaTrackerTheme(darkTheme = settings.isDarkMode) {
                 // If on secondary tab, back press navigates back to Dashboard (tab 0)
@@ -338,6 +370,7 @@ class MainActivity : ComponentActivity() {
 
                                     3 -> DailyLogScreen(
                                         topics = topics,
+                                        problems = problems,
                                         dailyLogs = dailyLogs,
                                         settings = settings,
                                         editingLog = editingLog,
@@ -364,11 +397,26 @@ class MainActivity : ComponentActivity() {
                                         dailyLogs = dailyLogs,
                                         freezes = freezes,
                                         settings = settings,
+                                        streakInfo = streakInfo,
                                         onToggleDarkMode = {
                                             viewModel.toggleDarkMode()
                                         },
                                         onUpdateSettings = { goal, mins, freezeEnabled ->
                                             viewModel.updateSettings(goal, mins, freezeEnabled)
+                                        },
+                                        onToggleReminderEnabled = { enabled ->
+                                            viewModel.updateReminderEnabled(enabled)
+                                            if (enabled) {
+                                                DailyReminderScheduler.scheduleDailyReminder(context, settings.reminderTime)
+                                            } else {
+                                                DailyReminderScheduler.cancelDailyReminder(context)
+                                            }
+                                        },
+                                        onUpdateReminderTime = { newTime ->
+                                            viewModel.updateReminderTime(newTime)
+                                            if (settings.reminderEnabled) {
+                                                DailyReminderScheduler.scheduleDailyReminder(context, newTime)
+                                            }
                                         },
                                         onLoadDemoData = {
                                             viewModel.loadDemoData()

@@ -93,6 +93,8 @@ data class UserSettingsEntity(
     val dailyGoal: Int = 2,
     val minMinutes: Int = 30,
     val reminderTime: String = "20:00",
+    val reminderEnabled: Boolean = true,
+    val lastReminderDate: String = "",
     val isDarkMode: Boolean = true,
     val streakFreezeEnabled: Boolean = true,
     val freezesPerMonth: Int = 2,

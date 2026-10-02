@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
         StreakFreezeEntity::class,
         UserSettingsEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -81,6 +81,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE user_settings ADD COLUMN reminderEnabled INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE user_settings ADD COLUMN lastReminderDate TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         fun getDatabase(context: Context, scope: CoroutineScope): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -88,7 +95,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "dsa_streak_tracker.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .fallbackToDestructiveMigration()
                     .addCallback(DatabaseCallback(scope))
                     .build()

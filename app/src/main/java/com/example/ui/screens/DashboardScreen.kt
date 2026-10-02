@@ -536,11 +536,15 @@ fun DashboardScreen(
             }
 
             // 4. Contribution Heatmap (GitHub style)
-            ContributionHeatmap(dailyLogs = dailyLogs)
+            ContributionHeatmap(
+                dailyLogs = dailyLogs,
+                problems = problems
+            )
 
             // 5. Weekly Bar Chart (Last 7 Days)
             WeeklyBarChart(
                 dailyLogs = dailyLogs,
+                problems = problems,
                 dailyGoal = settings.dailyGoal
             )
 

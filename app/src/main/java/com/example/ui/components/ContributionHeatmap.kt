@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.DailyLogEntity
+import com.example.data.model.ProblemEntity
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -45,6 +46,7 @@ import java.util.Locale
 @Composable
 fun ContributionHeatmap(
     dailyLogs: List<DailyLogEntity>,
+    problems: List<ProblemEntity> = emptyList(),
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
@@ -55,9 +57,18 @@ fun ContributionHeatmap(
     }
 
     val today = remember { LocalDate.now() }
-    val problemsCountByDate = remember(dailyLogs) {
-        dailyLogs.groupBy { it.date }
-            .mapValues { (_, dayLogs) -> dayLogs.sumOf { it.problemsSolved } }
+    val problemsCountByDate = remember(dailyLogs, problems) {
+        val dateMap = mutableMapOf<String, Int>()
+        dailyLogs.groupBy { it.date }.forEach { (date, logs) ->
+            dateMap[date] = logs.sumOf { it.problemsSolved }
+        }
+        problems.filter { it.solved && !it.solvedDate.isNullOrBlank() }
+            .groupBy { it.solvedDate!! }
+            .forEach { (date, plist) ->
+                val existing = dateMap[date] ?: 0
+                dateMap[date] = maxOf(existing, plist.size)
+            }
+        dateMap
     }
     val minutesCountByDate = remember(dailyLogs) {
         dailyLogs.groupBy { it.date }
@@ -120,8 +131,9 @@ fun ContributionHeatmap(
                 }
 
                 // Total solved count in past year
-                val totalYearProblems = remember(dailyLogs) {
-                    dailyLogs.sumOf { it.problemsSolved }
+                val totalYearProblems = remember(problemsCountByDate, weeks) {
+                    val allDates = weeks.flatten().map { it.toString() }.toSet()
+                    problemsCountByDate.filterKeys { it in allDates }.values.sum()
                 }
                 Surface(
                     shape = RoundedCornerShape(8.dp),

@@ -4,13 +4,20 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
+import android.provider.Settings as AndroidSettings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import android.content.pm.ShortcutInfo
 import android.content.pm.ShortcutManager
 import android.graphics.drawable.Icon as AndroidIcon
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,10 +32,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AcUnit
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.Brightness4
 import androidx.compose.material.icons.filled.Brightness7
@@ -50,6 +60,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -85,6 +97,8 @@ import com.example.data.model.ProblemEntity
 import com.example.data.model.StreakFreezeEntity
 import com.example.data.model.TopicEntity
 import com.example.data.model.UserSettingsEntity
+import com.example.data.model.StreakInfo
+import com.example.reminder.DailyReminderHelper
 import com.example.ui.theme.FlamePrimary
 import com.example.ui.theme.HardRed
 import com.example.ui.theme.MediumYellow
@@ -99,8 +113,11 @@ fun StatsSettingsScreen(
     dailyLogs: List<DailyLogEntity>,
     freezes: List<StreakFreezeEntity>,
     settings: UserSettingsEntity,
+    streakInfo: StreakInfo? = null,
     onToggleDarkMode: () -> Unit,
     onUpdateSettings: (dailyGoal: Int, minMinutes: Int, streakFreezeEnabled: Boolean) -> Unit,
+    onToggleReminderEnabled: (Boolean) -> Unit = {},
+    onUpdateReminderTime: (String) -> Unit = {},
     onLoadDemoData: () -> Unit,
     onExportJson: suspend () -> String,
     onImportJson: suspend (String) -> Boolean,
@@ -117,6 +134,18 @@ fun StatsSettingsScreen(
     var showResetConfirmDialog by remember { mutableStateOf(false) }
     var showInstallGuideDialog by remember { mutableStateOf(false) }
 
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            onToggleReminderEnabled(true)
+            Toast.makeText(context, "Daily Streak Reminder enabled!", Toast.LENGTH_SHORT).show()
+        } else {
+            onToggleReminderEnabled(false)
+            Toast.makeText(context, "Notification permission is required for practice reminders", Toast.LENGTH_LONG).show()
+        }
+    }
+
     // Stats calculations
     val totalProblemsSolved = remember(problems, dailyLogs) {
         val fromProblems = problems.count { it.solved }
@@ -129,14 +158,24 @@ fun StatsSettingsScreen(
     }
     val totalHours = String.format("%.1f", totalMinutes / 60.0)
 
-    val averageProblemsPerDay = remember(dailyLogs) {
-        if (dailyLogs.isNotEmpty()) {
-            String.format("%.1f", dailyLogs.sumOf { it.problemsSolved }.toDouble() / dailyLogs.size)
+    val dailyProblemCounts = remember(dailyLogs, problems) {
+        val map = mutableMapOf<String, Int>()
+        dailyLogs.groupBy { it.date }.forEach { (d, l) -> map[d] = l.sumOf { it.problemsSolved } }
+        problems.filter { it.solved && !it.solvedDate.isNullOrBlank() }.groupBy { it.solvedDate!! }.forEach { (d, p) ->
+            val prev = map[d] ?: 0
+            map[d] = maxOf(prev, p.size)
+        }
+        map
+    }
+
+    val averageProblemsPerDay = remember(dailyProblemCounts) {
+        if (dailyProblemCounts.isNotEmpty()) {
+            String.format(java.util.Locale.US, "%.1f", dailyProblemCounts.values.sum().toDouble() / dailyProblemCounts.size)
         } else "0.0"
     }
 
-    val bestDayLog = remember(dailyLogs) {
-        dailyLogs.maxByOrNull { it.problemsSolved }
+    val bestDayEntry = remember(dailyProblemCounts) {
+        dailyProblemCounts.maxByOrNull { it.value }
     }
 
     // Difficulty breakdown
@@ -280,13 +319,13 @@ fun StatsSettingsScreen(
                             Text("Best Record", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = if (bestDayLog != null) "${bestDayLog.problemsSolved} in 1d" else "0",
+                                text = if (bestDayEntry != null && bestDayEntry.value > 0) "${bestDayEntry.value} in 1d" else "0",
                                 style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = MediumYellow
                             )
                             Text(
-                                text = bestDayLog?.date ?: "None yet",
+                                text = if (bestDayEntry != null && bestDayEntry.value > 0) bestDayEntry.key else "None yet",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -560,23 +599,290 @@ fun StatsSettingsScreen(
                         )
                     }
 
-                    // Reminder Time Info
-                    Row(
+                    // --- DAILY STREAK REMINDER SECTION ---
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Notifications, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Practice Reminder", fontWeight = FontWeight.Bold)
+                        val formattedTime12h = remember(settings.reminderTime) {
+                            try {
+                                val parts = settings.reminderTime.split(":")
+                                val hour = parts.getOrNull(0)?.toIntOrNull() ?: 20
+                                val minute = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                                val period = if (hour >= 12) "PM" else "AM"
+                                val hour12 = when {
+                                    hour == 0 -> 12
+                                    hour > 12 -> hour - 12
+                                    else -> hour
+                                }
+                                String.format(java.util.Locale.US, "%d:%02d %s", hour12, minute, period)
+                            } catch (_: Exception) {
+                                settings.reminderTime
+                            }
                         }
-                        Text(
-                            text = "${settings.reminderTime} Daily",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = FlamePrimary
-                        )
+
+                        // Header with flame icon
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Whatshot,
+                                contentDescription = null,
+                                tint = FlamePrimary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = "Daily Streak Reminder",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = "Remind me to practice before my streak expires.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        // System Notifications Disabled Warning Banner
+                        val systemNotificationsEnabled = NotificationManagerCompat.from(context).areNotificationsEnabled()
+                        if (!systemNotificationsEnabled) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f))
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "Notifications disabled in Android settings",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    TextButton(
+                                        onClick = {
+                                            val intent = Intent(AndroidSettings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                                putExtra(AndroidSettings.EXTRA_APP_PACKAGE, context.packageName)
+                                            }
+                                            context.startActivity(intent)
+                                        }
+                                    ) {
+                                        Text("Enable", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+
+                        // Daily reminder [ ON / OFF ]
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Daily reminder",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = if (settings.reminderEnabled && systemNotificationsEnabled) "Active" else "Disabled",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (settings.reminderEnabled && systemNotificationsEnabled) FlamePrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Switch(
+                                checked = settings.reminderEnabled,
+                                onCheckedChange = { enabled ->
+                                    if (enabled) {
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                            ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                                        ) {
+                                            permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                        } else if (!systemNotificationsEnabled) {
+                                            val intent = Intent(AndroidSettings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                                putExtra(AndroidSettings.EXTRA_APP_PACKAGE, context.packageName)
+                                            }
+                                            context.startActivity(intent)
+                                        } else {
+                                            onToggleReminderEnabled(true)
+                                        }
+                                    } else {
+                                        onToggleReminderEnabled(false)
+                                    }
+                                },
+                                colors = SwitchDefaults.colors(checkedThumbColor = FlamePrimary)
+                            )
+                        }
+
+                        // Reminder time row
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable(enabled = settings.reminderEnabled) {
+                                    val parts = settings.reminderTime.split(":")
+                                    val initialHour = parts.getOrNull(0)?.toIntOrNull() ?: 20
+                                    val initialMinute = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                                    val is24Hour = android.text.format.DateFormat.is24HourFormat(context)
+                                    android.app.TimePickerDialog(
+                                        context,
+                                        { _, hourOfDay, minute ->
+                                            val formatted = String.format(java.util.Locale.US, "%02d:%02d", hourOfDay, minute)
+                                            onUpdateReminderTime(formatted)
+                                        },
+                                        initialHour,
+                                        initialMinute,
+                                        is24Hour
+                                    ).show()
+                                }
+                                .padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Reminder time",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "Default: 8:00 PM local device time",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = if (settings.reminderEnabled) FlamePrimary.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant,
+                                border = BorderStroke(1.dp, if (settings.reminderEnabled) FlamePrimary.copy(alpha = 0.35f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                            ) {
+                                Text(
+                                    text = formattedTime12h,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (settings.reminderEnabled) FlamePrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+
+                        // Quick presets row
+                        if (settings.reminderEnabled) {
+                            val presetTimes = listOf(
+                                "18:00" to "6:00 PM",
+                                "19:00" to "7:00 PM",
+                                "20:00" to "8:00 PM",
+                                "21:00" to "9:00 PM",
+                                "22:00" to "10:00 PM"
+                            )
+
+                            LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                items(presetTimes) { (time24, label12) ->
+                                    val isSelected = settings.reminderTime == time24
+                                    FilterChip(
+                                        selected = isSelected,
+                                        onClick = {
+                                            onUpdateReminderTime(time24)
+                                        },
+                                        label = {
+                                            Text(
+                                                text = label12,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                            )
+                                        },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = FlamePrimary.copy(alpha = 0.2f),
+                                            selectedLabelColor = FlamePrimary
+                                        ),
+                                        border = FilterChipDefaults.filterChipBorder(
+                                            enabled = true,
+                                            selected = isSelected,
+                                            borderColor = MaterialTheme.colorScheme.outline,
+                                            selectedBorderColor = FlamePrimary
+                                        )
+                                    )
+                                }
+                            }
+
+                            // Custom Time Picker Button
+                            OutlinedButton(
+                                onClick = {
+                                    val parts = settings.reminderTime.split(":")
+                                    val initialHour = parts.getOrNull(0)?.toIntOrNull() ?: 20
+                                    val initialMinute = parts.getOrNull(1)?.toIntOrNull() ?: 0
+                                    val is24Hour = android.text.format.DateFormat.is24HourFormat(context)
+                                    android.app.TimePickerDialog(
+                                        context,
+                                        { _, hourOfDay, minute ->
+                                            val formatted = String.format(java.util.Locale.US, "%02d:%02d", hourOfDay, minute)
+                                            onUpdateReminderTime(formatted)
+                                        },
+                                        initialHour,
+                                        initialMinute,
+                                        is24Hour
+                                    ).show()
+                                },
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Default.AccessTime, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Choose Custom Time...",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+
+                            // Test Notification Trigger
+                            OutlinedButton(
+                                onClick = {
+                                    if (streakInfo?.isTodayCompleted == true) {
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            "Today's streak is already completed! Reminder is suppressed as requested.",
+                                            android.widget.Toast.LENGTH_LONG
+                                        ).show()
+                                    } else {
+                                        val currentStreak = streakInfo?.currentStreak ?: 0
+                                        DailyReminderHelper.showReminderNotification(context, currentStreak)
+                                        android.widget.Toast.makeText(
+                                            context,
+                                            "Reminder notification sent!",
+                                            android.widget.Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                },
+                                shape = RoundedCornerShape(10.dp),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(Icons.Default.Notifications, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "Test Reminder Notification",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
                     }
                 }
             }

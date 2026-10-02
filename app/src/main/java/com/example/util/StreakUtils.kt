@@ -1,6 +1,7 @@
 package com.example.util
 
 import com.example.data.model.DailyLogEntity
+import com.example.data.model.ProblemEntity
 import com.example.data.model.StreakFreezeEntity
 import com.example.data.model.StreakInfo
 import com.example.data.model.UserSettingsEntity
@@ -13,16 +14,23 @@ object StreakUtils {
         logs: List<DailyLogEntity>,
         freezes: List<StreakFreezeEntity>,
         settings: UserSettingsEntity,
-        referenceDate: LocalDate = LocalDate.now()
+        referenceDate: LocalDate = LocalDate.now(),
+        problems: List<ProblemEntity> = emptyList()
     ): StreakInfo {
         val minMinutes = settings.minMinutes
         val validDateStrings = mutableSetOf<String>()
 
         // Merge daily totals by date to ensure duplicate logs on the same date combine properly
         val logsByDate = logs.groupBy { it.date }
-        for ((date, dayLogs) in logsByDate) {
-            val totalProblems = dayLogs.sumOf { it.problemsSolved }
-            val totalMinutes = dayLogs.sumOf { it.minutes }
+        val problemsByDate = problems.filter { it.solved && !it.solvedDate.isNullOrBlank() }.groupBy { it.solvedDate!! }
+        val allPracticeDates = (logsByDate.keys + problemsByDate.keys).distinct()
+
+        for (date in allPracticeDates) {
+            val totalProblems = maxOf(
+                logsByDate[date]?.sumOf { it.problemsSolved } ?: 0,
+                problemsByDate[date]?.size ?: 0
+            )
+            val totalMinutes = logsByDate[date]?.sumOf { it.minutes } ?: 0
             if (totalProblems >= 1 || totalMinutes >= minMinutes) {
                 validDateStrings.add(date)
             }

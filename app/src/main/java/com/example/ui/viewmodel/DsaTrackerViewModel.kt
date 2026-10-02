@@ -52,9 +52,16 @@ class DsaTrackerViewModel(application: Application) : AndroidViewModel(applicati
     val streakInfo: StateFlow<StreakInfo> = combine(
         dailyLogs,
         freezes,
-        settings
-    ) { logs, freezesList, currentSettings ->
-        val info = StreakUtils.calculateStreak(logs, freezesList, currentSettings)
+        settings,
+        problems
+    ) { logs, freezesList, currentSettings, problemsList ->
+        val info = StreakUtils.calculateStreak(
+            logs = logs,
+            freezes = freezesList,
+            settings = currentSettings,
+            referenceDate = LocalDate.now(),
+            problems = problemsList
+        )
 
         // Check if new longest streak needs persisting
         if (info.longestStreak > currentSettings.longestStreak) {
@@ -191,6 +198,28 @@ class DsaTrackerViewModel(application: Application) : AndroidViewModel(applicati
                     dailyGoal = dailyGoal,
                     minMinutes = minMinutes,
                     streakFreezeEnabled = streakFreezeEnabled
+                )
+            )
+        }
+    }
+
+    fun updateReminderTime(reminderTime: String) {
+        viewModelScope.launch {
+            val current = settings.value
+            repository.updateSettings(
+                current.copy(
+                    reminderTime = reminderTime
+                )
+            )
+        }
+    }
+
+    fun updateReminderEnabled(enabled: Boolean) {
+        viewModelScope.launch {
+            val current = settings.value
+            repository.updateSettings(
+                current.copy(
+                    reminderEnabled = enabled
                 )
             )
         }
