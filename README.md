@@ -5,7 +5,7 @@
 
 # DSA Streak Tracker
 
-**A focused, local-first companion for building a consistent Data Structures & Algorithms practice habit.**
+**A focused, local-first companion for building a consistent Data Structures & Algorithms practice habit.** 
 
 Track your daily practice, protect your streak, follow a fixed DSA roadmap, and see your progress grow over time.
 
