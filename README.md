@@ -7,7 +7,7 @@
 
 **A focused,  local-first companion for building a consistent Data Structures & Algorithms practice habit.** 
 
-Track your daily practice, protect your streak, follow a fixed DSA roadmap, and see your progress grow over time.
+Track your daily  practice, protect your streak, follow a fixed DSA roadmap, and see your progress grow over time.
 
 <p>
   <img src="https://img.shields.io/badge/React-TypeScript-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React"/>
